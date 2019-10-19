@@ -109,7 +109,7 @@ def main():
     createShip(shmass, 2000, 300)
     createShip(shmass, 1000, 300)
 
-    for t in range(50):
+    for t in range(50): # выполняем программу в течение 50 итераций
         graph(0, img, fmass, shmass)    # стираем старое
         phys(fmass, shmass)             # изменяем координаты в соответствии со скоростями
         graph(1, img, fmass, shmass)    # рисуем новое
