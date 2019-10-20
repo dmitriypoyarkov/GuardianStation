@@ -10,15 +10,16 @@ wname = 'Body and photons'  # Название окна
 shipsize = 4                
 shcnt = 3                   
 fcnt = 200                  # Количество фотонов в пучке
-fv = 30                     # Скорость фотонов
-bvel = 10                   # Скорость кораблей
+fv = 10                     # Скорость фотонов
+bvel = 5                   # Скорость кораблей
 fr = 1                      # Радиус фотонов
-wth = 2*1280                # Ширина окна
-lth = 2*720                 # Высота
+wth = 1*1280                # Ширина окна
+lth = 1*720                 # Высота
 x0 = int(wth/2)             # Начало координат
 y0 = int(lth/2)             #
-stR = 60                    # Радиус установки
-stTh = 40
+stR = 30                    # Радиус установки
+stTh = 20                   # Толщина контура установки
+pr = 1                      # Радиус точки
 # endregion
 
 # region Функции физики
@@ -27,13 +28,18 @@ stTh = 40
 def photCollid(fmass, pmass):
     for b in range(len(fmass)):
         bunch = fmass[b]
-        for f in range(len(bunch)):
+        f = 0
+        while f < len(bunch):
             foton = bunch[f]
-            lx = foton[0] - x0
-            ly = foton[1] - y0
+            lx = int(foton[0]) - x0
+            ly = int(foton[1]) - y0
             l = mh.sqrt(lx**2+ly**2)
-            if (l < stR + int(stTh*0.5) and l > stR - int(stTh*0.5)):
+            if l <= stR + stTh*0.5 and l > stR - stTh*0.5:
                 pmass.append([ foton[0], foton[1], foton[2] ]) 
+                del bunch[f]
+                f -= 1
+            f += 1
+
 
 
 # Cоздание пучка фотонов
@@ -89,11 +95,11 @@ def movePhot(fmass):
 
 # region Функции графики
 
-# функция рисует точку
+# функция рисует точку, 
 def drawPoints(pmass, color):
     for i in range(len(pmass)):
         point = pmass[i]
-        cv.circle(img, (int(point[0]), int(point[1])), 5, color, -1)
+        cv.circle(img, (int(point[0]), int(point[1])), pr, color, -1)
 
 # функция рисует установку
 def drawStation(color):
@@ -129,8 +135,9 @@ def graph(draw, img, fmass, shmass, pmass):    # draw: если 1, то закр
     else:
         color, color1, color2 = (0,0,0), (0,0,0), (0,0,0) # черный (стираем)
 
-    pmass = []       
-    photCollid(fmass, pmass)
+    pmass = []                  # стираем старые точки из pmass    
+    photCollid(fmass, pmass)    # ищем новые столкновения фотонов, заносим в pmass
+    
 
     drawStation(color)
     drawShip(shmass, color)
@@ -144,12 +151,12 @@ def main():
     fmass = [[]]                        # создаём трёхмерный массив, хранящий все пучки, каждый пучок хранит все фотоны, фотоны - 
                                         # свои координаты и угол относительно направления оси x по часовой стрелке.
     shmass = []                         # массив кораблей, хранящий каждый корабль, корабль хранит свои координаты и угол.
-    pmass = []                          # массив точек
+    pmass = []                          # массив точек, в него заносится координаты и угол фотонов, проходящих через установку.
 
     # pmass.append([x0+2,y0+4, 0])
     createShip(shmass, 500, 300)
 
-    for t in range(50): # выполняем программу в течение 50 итераций
+    for t in range(100): # выполняем программу в течение стольких итераций
         graph(0, img, fmass, shmass, pmass)    # стираем старое
         phys(fmass, shmass, pmass)             # изменяем координаты в соответствии со скоростями
         graph(1, img, fmass, shmass, pmass)    # рисуем новое
