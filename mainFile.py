@@ -40,7 +40,14 @@ def photCollid(fmass, pmass):
                 f -= 1
             f += 1
 
-
+# функция удаляет из массива точек все элементы, кроме тех, что с углом 10.
+def clearPmass(pmass):
+    i = 0
+    while i < len(pmass):
+        if not pmass[i][2] == 10:
+            del pmass[i]
+            i -= 1
+        i += 1
 
 # Cоздание пучка фотонов
 def createBunch(x, y, fmass):                      
@@ -87,10 +94,18 @@ def moveShip(shmass, fmass):
 # функция даёт приращение координате каждого фотона вдоль его направления.
 def movePhot(fmass):
     for b in range (len(fmass)):                    # для каждого пучка...
-        for f in range (len(fmass[b])):             # для каждого фотона из пучка...
+        f = 0
+        while f < len(fmass[b]):             # для каждого фотона из пучка...
             f_afa = fmass[b][f][2]                  # работаем с углом поворота фотона относительно горизонтальной оси, по часовой стрелке!
-            fmass[b][f][0] = (fmass[b][f][0] + fv*mh.cos(f_afa)) # приращение координат фотона в направлении этого угла
-            fmass[b][f][1] = (fmass[b][f][1] + fv*mh.sin(f_afa)) #
+            x = fmass[b][f][0] + fv*mh.cos(f_afa)
+            y = fmass[b][f][1] + fv*mh.sin(f_afa)
+            if (x <= wth and x >= 0 and y <= lth and y >= 0):
+                fmass[b][f][0] = (fmass[b][f][0] + fv*mh.cos(f_afa)) # приращение координат фотона в направлении этого угла
+                fmass[b][f][1] = (fmass[b][f][1] + fv*mh.sin(f_afa)) #
+            else: 
+                del fmass[b][f]
+                f -= 1
+            f += 1
  # endregion
 
 # region Функции графики
@@ -135,7 +150,9 @@ def graph(draw, img, fmass, shmass, pmass):    # draw: если 1, то закр
     else:
         color, color1, color2 = (0,0,0), (0,0,0), (0,0,0) # черный (стираем)
 
-    pmass = []                  # стираем старые точки из pmass    
+
+
+    clearPmass(pmass)           # стираем старые точки из pmass, кроме тех, что с углом 10
     photCollid(fmass, pmass)    # ищем новые столкновения фотонов, заносим в pmass
     
 
