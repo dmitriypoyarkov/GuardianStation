@@ -48,7 +48,7 @@ class Turret():#класс турели
     def fire(self, coordinates): #Стреляем по координатам корабля, возвращаем объект типа bullet
         return Bullet((self.x, self.y), self.get_target_location(coordinates))
 
-    
+
 class Bullet():
     def __init__(self, start, target):#инициализируем снаряд, задавая начальную точку и точку прилёта снаряда, находим проекцию скоростей
         r = ((start[0] - target[0]) ** 2 + (start[1] - target[1]) ** 2) ** 0.5
@@ -98,7 +98,7 @@ def createBunch(x, y, fmass):
         foton[0] = x                                # присваиваем координаты из аргументов
         foton[1] = y                                #
         foton[2] = 2*3.14*(i/fcnt)                  # присваиваем угол, деля круг на равные части по количеству фотонов.
-    
+
 
 # функция возвращает угол между вектором с началом в точке (x, y) концом в точке (x1, y1) и вектором, направленным вдоль оси x
 def setAngle(x,y,x1,y1):  
@@ -193,7 +193,7 @@ def graph(draw, img, fmass, shmass, pmass, bullets, turret):    # draw: если
 
     clearPmass(pmass)           # стираем старые точки из pmass, кроме тех, что с углом 10
     photCollid(fmass, pmass)    # ищем новые столкновения фотонов, заносим в pmass
-    
+
 
     drawStation(color)
     drawShip(shmass, color)
@@ -202,7 +202,7 @@ def graph(draw, img, fmass, shmass, pmass, bullets, turret):    # draw: если
     turret.draw((255,255,0))#отрисовываем турель #<А>
     for bullet in bullets:#<A>
         bullet.draw(color3)
-    
+
 # Главная функция
 def main():
     fmass = [[]]                        # создаём трёхмерный массив, хранящий все пучки, каждый пучок хранит все фотоны, фотоны - 
