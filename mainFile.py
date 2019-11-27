@@ -45,8 +45,7 @@ class Turret():#класс турели
         return(coordinates[tmin])
     def fire(self, coordinates): #Стреляем по координатам корабля, возвращаем объект типа bullet
         return Bullet((self.x, self.y), self.get_target_location(coordinates))
-
-    
+  
 class Bullet():
     def __init__(self, start, target):#инициализируем снаряд, задавая начальную точку и точку прилёта снаряда, находим проекцию скоростей
         r = ((start[0] - target[0]) ** 2 + (start[1] - target[1]) ** 2) ** 0.5
@@ -60,8 +59,6 @@ class Bullet():
         self.x += self.x_speed
         self.y += self.y_speed
 #endregion </A>
-
-# endregion
 
 # region <Л>
 # функция вычисляет линии, соответствующие направлениям фотонов, врезавшихся в установку
@@ -83,7 +80,6 @@ def calculate_intersection(pmass, abmass):
         a = abmass[0][0]                        # заносим для простоты нужные величины его 0-координаты
         b = abmass[0][1]                        #
         nbr = abmass[0][2]                      #
-
         i = 1                                   # счетчик для остальных прямых (наша - 0-я, начинаем с 1-й)
         ctr = 0                                 # счетчик тех прямых, с которыми мы учли пересечение
         coord = []                              # массив для двух координат, x y, с ним будем работать
@@ -197,6 +193,8 @@ def movePhot(fmass):
 
 # region Функции графики
 
+#Функция рисует картинку на месте установки
+
 # функция рисует точку, 
 def drawPoints(pmass, color):
     for i in range(len(pmass)):
@@ -204,8 +202,13 @@ def drawPoints(pmass, color):
         cv.circle(img, (int(point[0]), int(point[1])), pr, color, -1)
 
 # функция рисует установку
-def drawStation(color):
-    cv.circle(img, (x0,y0), stR, color, -1)
+def drawStation():
+    cv.rectangle(img, (x0 - int(stR*0.75), y0 - int(stR*0.75)), (x0 + int(stR*0.75), y0 + int(stR*0.75)), (1, 0.2, 0), -1)
+    cv.rectangle(img, (x0 - int(stR*0.25), y0 - int(stR*0.25)), (x0 + int(stR*0.25), y0 + int(stR*0.25)), (0.4, 0, 0.5), -1)
+    cv.rectangle(img, (x0 - int(stR*0.5), y0 + int(stR*0.75)), (x0 + int(stR*0.5), y0 + stR), (0.4, 0, 0.5), -1)
+    cv.rectangle(img, (x0 + int(stR*0.75), y0 - int(stR*0.5)), (x0 + stR, y0 + int(stR*0.5)), (0.4, 0, 0.5), -1)
+    cv.rectangle(img, (x0 - int(stR*0.5), y0 - stR), (x0 + int(stR*0.5), y0 - int(stR*0.75)), (0.4, 0, 0.5), -1)
+    cv.rectangle(img, (x0 - stR, y0 - int(stR*0.5)), (x0 - int(stR*0.75), y0 + int(stR*0.5)), (0.4, 0, 0.5), -1)
 
 # функция рисует корабли, то есть кружки, центры кружков хранятся в shmass, радиус - в глобальной переменной shipsize
 def drawShip(shmass, color):       
@@ -264,18 +267,19 @@ def graph(draw, img, fmass, shmass, pmass, bullets, turret):    # draw: если
     if draw == 1:                   # нужно чтобы pmass не удалялся перед обработкой физики (физика обрабатывается после стирания)
         clearPmass(pmass)           # стираем старые точки из pmass, кроме тех, что с углом 10. Это третий! элемент. 4-й это номер кор.
     photCollid(fmass, pmass)        # ищем новые столкновения фотонов, заносим в pmass  
-    drawStation(color)
+    drawStation()
     turret.draw((255,255,0))#отрисовываем турель #<А>
     for bullet in bullets:#<A>
         bullet.draw(color3) 
 
     drawShip(shmass, color)
-    drawPhot(fmass, color1)         # РИСУЕТ ФОТОНЫ, ЧТОБЫ НЕ РИСОВАТЬ ЗАКОММЕНТИРУЕМ
+    #drawPhot(fmass, color1)         # РИСУЕТ ФОТОНЫ, ЧТОБЫ НЕ РИСОВАТЬ ЗАКОММЕНТИРУЕМ
     drawPoints(pmass, color2)      
     
 
 # Главная функция
 def main():
+
     fmass = [[]]                        # создаём трёхмерный массив, хранящий все пучки, каждый пучок хранит все фотоны, фотоны - 
                                         # свои координаты и угол относительно направления оси x по часовой стрелке.
     shmass = []                         # массив кораблей, хранящий каждый корабль, корабль хранит свои координаты и угол.
@@ -294,7 +298,7 @@ def main():
         graph(1, img, fmass, shmass, pmass, bullets, turret1)    # рисуем новое
     
         cv.imshow(wname, img)           
-        cv.waitKey(50)
+        cv.waitKey(1)
 
 cv.namedWindow(wname, cv.WINDOW_NORMAL) # создаём окно размером 1280 на 720
 cv.resizeWindow(wname, 1280, 720)       #
