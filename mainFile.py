@@ -10,7 +10,7 @@ wname = 'Guardian Station'  # Название окна
 shipsize = 9                # размер корабля                
 fcnt = 500                  # Количество фотонов в пучке
 fv = 50                     # Скорость фотонов
-bvel = 3                   # Скорость кораблей
+bvel = 5                   # Скорость кораблей
 fr = 1                      # Радиус фотонов
 wth = int(1*1280)           # Ширина окна (разрешение)
 lth = int(1*720)            # Высота
@@ -32,8 +32,24 @@ bulletR = 11                # радиус снаряда
 class Turret():                         #класс турели
     def __init__(self, coordinates):    #при создании новой турели задаём её координаты
         self.x, self.y = coordinates
-    def draw(self, color):              #рисуем турель
-        cv.circle(img, (self.x,self.y), turretR, color, -1)
+    def draw(self, color):              #рисуем турель # <D>
+        if color == (0,0,0):
+            color1, color2 = color, color
+        else:
+            color1, color2 = (1, 0.2, 0), (0.4, 0, 0.5) 
+        x = self.x
+        y = self.y
+        mp = 1
+        if x > wth*0.5:
+            mp = -1
+        tR = turretR
+        cv.fillPoly(img, [np.array([[x+mp*(0.25*tR),y], [x+mp*(2*tR), y+0.5*tR], [x+mp*(1.25*tR), y-0.25*tR], ], np.int32)], color2)
+        cv.fillPoly(img, [np.array([[x-mp*(0.25*tR),y], [x+mp*(0.5*tR), y+2*tR], [x-mp*(0.25*tR), y+1.25*tR], ], np.int32)], color2)
+        cv.circle(img, (x,y), int(tR), color2, -1)
+        cv.circle(img, (x,y), int(0.6*tR), color1, int(0.3*tR))
+        
+        
+
     def get_target_location(self, coordinates):
         #Получаем точку, в которую надо стрелять следующим образом: находим t, при котором |r(t) - vt| < bulletR - 3, где v - скорость снаряда,
         #при достаточном размере снаряда (или при большом массиве точек траектории), гарантированно попадаем
@@ -58,8 +74,15 @@ class Bullet():
         self.y_speed = int((target[1] - start[1]) * bulletSpeed / r)
         self.x = start[0]
         self.y = start[1]
-    def draw(self, color):              #рисуем снаряд
-        cv.circle(img, (self.x,self.y), bulletR, color, -1)
+    def draw(self, color):              #рисуем снаряд # <D>
+        if color == (0,0,0):
+            color1 = color
+        else:
+            color1 = (0.2, 0, 1)
+        bR = 1.3*bulletR
+        cv.circle(img, (self.x,self.y), int(bR), color1, int(bR*0.2))
+        cv.circle(img, (self.x,self.y), int(0.4*bR), color1, -1)        
+
     def move(self):                     #сдвигаем снаряд, соответственно его времени
         self.x += self.x_speed
         self.y += self.y_speed
@@ -287,10 +310,23 @@ def drawStation():
     cv.rectangle(img, (x0 - stR, y0 - int(stR*0.5)), (x0 - int(stR*0.75), y0 + int(stR*0.5)), (0.4, 0, 0.5), -1)
 
 # функция рисует корабли, то есть кружки, центры кружков хранятся в shmass, радиус - в глобальной переменной shipsize
-def drawShip(shmass, color):       
+def drawShip(shmass, color):
+    if color == (0,0,0):
+        color1, color2 = color, color
+    else:
+        color1, color2 = (1, 0.2, 0), (0.2, 0, 1)       
     for i in range(len(shmass)):
         ship = shmass[i]
-        cv.circle(img, (int(ship[0]), int(ship[1])), shipsize, color, -1)
+        x = shmass[i][0]
+        y = shmass[i][1]
+        shR = shipsize*1.5
+        #cv.circle(img, (int(ship[0]), int(ship[1])), shipsize, color, -1)
+
+        cv.rectangle(img, (int(x-shR), int(y-0.25*shR)), (int(x+shR), int(y+0.25*shR)), color1, -1)
+        cv.fillPoly(img, [np.array([[x-0.5*shR,y], [x,y+0.5*shR],[x+0.5*shR,y],[x,y-0.5*shR]], np.int32)], color2)
+        cv.fillPoly(img, [np.array([[x-0.75*shR, y-shR], [x-0.75*shR, y+shR], [x-1.25*shR, y+0.25*shR], [x-1.25*shR, y-0.25*shR]], np.int32)], color2)
+        cv.fillPoly(img, [np.array([[x+0.75*shR, y-shR], [x+0.75*shR, y+shR], [x+1.25*shR, y+0.25*shR], [x+1.25*shR, y-0.25*shR]], np.int32)], color2)
+        
 
 # функция рисует фотоны, то есть кружки, центры кружков хранятся в fmass, радиус - в глобальной переменной fr
 def drawPhot(fmass, color):
