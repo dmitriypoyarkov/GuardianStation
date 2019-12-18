@@ -19,15 +19,16 @@ y0 = int(lth/2)             #
 stR = 40                    # Радиус установки
 pr = 1                      # Радиус точки из массива pmass
 chet = True                 # Меняя эту переменную, сделаем испускание фотонов раз в два кадра.
-hp = 4                      # Количество жизней
-shN = 0
-abmass_todraw = []
+hp_0 = 4                    # Количество жизней
+hp = hp_0
+shN = 0                     # Переменная для количества кораблей
+abmass_todraw = []          # Массив для рисования прямых
 switch = [0, 0, 0]          # Массив для пункта меню Settings -> Drawing. Изначально заполнен единицами, то есть рисуем всё
 turretR = 22                # размер турели
 bulletSpeed = 22            # скорость снаряда
-bulletR = 8                # радиус снаряда
-shnum = 1                   # Изначальное количество кораблей, не меняется во время симуляции
-
+bulletR = 8                 # радиус снаряда
+shnum = 5                   # Изначальное количество кораблей, не меняется во время симуляции
+ct = 100
 
 # region Классы
 class Turret():                         #класс турели
@@ -49,8 +50,6 @@ class Turret():                         #класс турели
         cv.circle(img, (x,y), int(tR), color2, -1)
         cv.circle(img, (x,y), int(0.6*tR), color1, int(0.3*tR))
         
-        
-
     def get_target_location(self, coordinates):
         #Получаем точку, в которую надо стрелять следующим образом: находим t, при котором |r(t) - vt| < bulletR - 3, где v - скорость снаряда,
         #при достаточном размере снаряда (или при большом массиве точек траектории), гарантированно попадаем
@@ -58,16 +57,11 @@ class Turret():                         #класс турели
         tmin = 0
         range_min = 10000
         for t in range(len(coordinates)):
-            #print (t)
-            #print(((self.x - coordinates[t][0]) ** 2 + (self.y - coordinates[t][1]) ** 2) ** 0.5 - bulletSpeed * t)
-            #print (abs(((self.x - coordinates[t][0]) ** 2 + (self.y - coordinates[t][1]) ** 2) ** 0.5 - 2 * bulletSpeed * t))
             if abs(((self.x - coordinates[t][0]) ** 2 + (self.y - coordinates[t][1]) ** 2) ** 0.5 - 2 * bulletSpeed * t) < range_min:
                 tmin = t
                 range_min = abs(((self.x - coordinates[t][0]) ** 2 + (self.y - coordinates[t][1]) ** 2) ** 0.5 - 2 * bulletSpeed * t)
                 if range_min < bulletSpeed:
                     break
-        #print("c",coordinates[tmin])
-        #print("t", tmin)
         return(coordinates[tmin + 1])
     def fire(self, coordinates):        #Стреляем по координатам корабля, возвращаем объект типа bullet
         return Bullet((self.x, self.y), self.get_target_location(coordinates))
@@ -79,7 +73,7 @@ class Bullet():
         self.y_speed = int((target[1] - start[1]) * bulletSpeed / r)
         self.x = start[0]
         self.y = start[1]
-    def draw(self, color):              #рисуем снаряд # <D>
+    def draw(self, color):              #рисуем снаряд
         if color == (0,0,0):
             color1 = color
         else:
@@ -91,13 +85,10 @@ class Bullet():
     def move(self):                     #сдвигаем снаряд, соответственно его времени
         self.x += self.x_speed
         self.y += self.y_speed
-
-        # <D>
         if (self.x <= 0 or self.x >= wth or self.y <= 0 or self.y >= lth):
             return 1
         else:
             return 0
-        # </D>
 #endregion 
 
 # функция вычисляет линии, соответствующие направлениям фотонов, врезавшихся в установку
@@ -138,7 +129,7 @@ def calculate_intersection(pmass, abmass):
             i += 1                                              # просто повышение счетчика цикла
         abmass.pop(0)                                           # нулевой элемент удаляем
 
-        f = 0
+        f = 0                                                   # флаг
         if (ctr >= 4):                                          # если учтено больше трёх пересечений (их не обязательно 5)
             if ((x0 - coord[0])**2 + (y0 - coord[1])**2)**0.5 < stR*3:
                 f = 1
@@ -147,11 +138,7 @@ def calculate_intersection(pmass, abmass):
                     if ((pmass[i][0] - coord[0])**2 + (pmass[i][1] - coord[1])**2)**0.5 < 0.9*bvel or ((x0 - coord[0])**2 + (y0 - coord[1])**2)**0.5 < stR*3:
                         f = 1
             if f == 0:
-                
-                if nbr == 1:
-                    print("privet ")
-                    print(coord[0], coord[1], nbr)
-            pmass.append([coord[0], coord[1], 10, nbr])         # добавляем точку в pmass с номером корабля, испустившего фотон 
+                pmass.append([coord[0], coord[1], 10, nbr])         # добавляем точку в pmass с номером корабля, испустившего фотон 
 
 def drawABmass(abmass_todraw, color):
     for i in range(len(abmass_todraw)):
@@ -207,7 +194,6 @@ def createBunch(x, y, fmass, nbr):
         foton[2] = 2*mh.pi*(i/fcnt)
         foton[3] = nbr                              #четвёртый параметр отвечает за корабль, от которого фотон отлетел
     
-
 # функция возвращает угол между вектором с началом в точке (x, y) концом в точке (x1, y1) и вектором, направленным вдоль оси x
 def setAngle(x,y,x1,y1):  
     # условие нужно, чтобы устранить неопределенность в знаке при вычислении из скалярного произведения 
@@ -216,29 +202,18 @@ def setAngle(x,y,x1,y1):
     else:                   # если точка на картинке находится ВЫШЕ
         return mh.acos((x1-x)/(mh.sqrt(mh.pow(x1-x,2)+mh.pow(y1-y,2))))
 
-# функция возвращает угол между вектором с началом в точке (x, y) концом в точке (x1, y1) и вектором, направленным вдоль оси x
-# с разбросом в +/- 45 градусов
-def setAngleRand(x,y,x1,y1):  
-    # условие нужно, чтобы устранить неопределенность в знаке при вычислении из скалярного произведения 
-    if (y1-y) < 0:          # если точка имеет большую, чем точка 1, координату по y, то есть на картинке она НИЖЕ
-        return 2*mh.pi-mh.acos((x1-x)/(mh.sqrt(mh.pow(x1-x,2)+mh.pow(y1-y,2)))) + rm.random()*mh.pi*0.1
-    else:                   # если точка на картинке находится ВЫШЕ
-        return mh.acos((x1-x)/(mh.sqrt(mh.pow(x1-x,2)+mh.pow(y1-y,2)))) + rm.random()*mh.pi*0.1
-
-# функция добавляет еще один корабль в shmass. присваивает ему заданные координаты, и если угол не задан, корабль летит в центр.
+# функция добавляет еще один корабль в shmass. присваивает ему случайную координату выбранную достаточно далеко от установки
 def createShipRand(shmass, afa = 10):             # функция для создания корабля, принимает массив кораблей, координаты, направление (опц.)
     global shN
     #функция рандома работает для одного отрезка, но у нас их два, потому что установка в середине окна
     #поэтому временно как бы смещаем установку к правому краю и вычисляем от одного отрезка
     #если значение попало в область "эллипса", то смещаем его, чтобы было там, где по идее должно быть
-
     x = rm.randint(0, wth/2)
     if (wth/4 <= x <= wth/2):
         x += wth/2
     y = rm.randint(0, lth/2)
     if (lth/4 <= y <= lth/2):
         y += lth/2
-
     if afa == 10:                                   # если афа не задана, то она принимает десятку как знак того, что корабль
         afa = setAngle(x,y,x0,y0)                   # должен лететь в точку x0, y0. 
     shmass.append([x,y,afa,shN]) 
@@ -259,7 +234,6 @@ def moveShip(shmass, fmass, chet):
         ship[1] = (ship[1] + bvel*mh.sin(ship[2]))      # и вдоль y
         if (chet == True):
             createBunch(ship[0], ship[1], fmass, ship[3])     # создаем пучок фотонов в этой точке
-
 
 # функция даёт приращение координате каждого фотона вдоль его направления.
 def movePhot(fmass):
@@ -297,10 +271,7 @@ def bullCollid(bullets, shmass):
     while i < len(shmass):
         j = 0
         while j < len(bullets):
-            # print(i)
-            # print(len(shmass))
-            #print(shmass[i])
-            if ( (bullets[j].x - shmass[i][0])**2 + (bullets[j].y - shmass[i][1])**2 )**0.5 <= 1*(bulletR + shipsize): # МОЖНО ПОВЫСИТЬ
+            if ( (bullets[j].x - shmass[i][0])**2 + (bullets[j].y - shmass[i][1])**2 )**0.5 <= 1*(bulletR + shipsize):
                 global shN
                 shmass.pop(i)
                 bullets.pop(j)
@@ -314,6 +285,7 @@ def bullCollid(bullets, shmass):
 
 # функция подаёт сигнал на завершение симуляции, если установка мертва либо кораблей ноль.
 def simEnd():
+    print("privet")
     if hp == 0:
         print ("Station Destroyed")
         return 1
@@ -321,23 +293,20 @@ def simEnd():
         print ("Ships Destroyed")
         return 1
     return 0
-
-
 # endregion
 
 # region Функции графики
 
 # функция добавляет координаты предсказанных положений в pmass с углом 11. нужно чтобы их нарисовать, и чтобы они стёрлись потом.
 def drawPredict(pmass):
-    flag = 1
-    for j in range (10):
+    flag = 11
+    for j in range (shnum):
         cds = []
         for i in range(len(pmass)):
             if pmass[i][2] == 10:            # если точка это координата корабля
                 if pmass[i][3] == j:
                     flag = 0
                     cds.append(pmass[i])         # добавляем в массив её.
-
         if len(cds) > 4:                       # если мы получили больше 4 точек, добавляем их в pmass, чтобы нарисовать
             prediction = predict(cds) 
             for i in range(len(prediction)):
@@ -371,14 +340,11 @@ def drawShip(shmass, color):
         x = shmass[i][0]
         y = shmass[i][1]
         shR = shipsize*1.5
-        #cv.circle(img, (int(ship[0]), int(ship[1])), shipsize, color, -1)
-
         cv.rectangle(img, (int(x-shR), int(y-0.25*shR)), (int(x+shR), int(y+0.25*shR)), color1, -1)
         cv.fillPoly(img, [np.array([[x-0.5*shR,y], [x,y+0.5*shR],[x+0.5*shR,y],[x,y-0.5*shR]], np.int32)], color2)
         cv.fillPoly(img, [np.array([[x-0.75*shR, y-shR], [x-0.75*shR, y+shR], [x-1.25*shR, y+0.25*shR], [x-1.25*shR, y-0.25*shR]], np.int32)], color2)
         cv.fillPoly(img, [np.array([[x+0.75*shR, y-shR], [x+0.75*shR, y+shR], [x+1.25*shR, y+0.25*shR], [x+1.25*shR, y-0.25*shR]], np.int32)], color2)
         
-
 # функция рисует фотоны, то есть кружки, центры кружков хранятся в fmass, радиус - в глобальной переменной fr
 def drawPhot(fmass, color):
     for b in range(len(fmass)):
@@ -425,30 +391,12 @@ def predict(coordmass):
     prediction = [[p2[0]+dx_1, p2[1]+dy_1]]
     for i in range (0, 40):
         prediction.append([prediction[i][0] + mh.cos(afa)*2*bvel, prediction[i][1]+ mh.sin(afa)*2*bvel])
-
-
     return prediction
-
-#функция возвращает начальное положение кораблей. Это на всякий, это уже есть в createShip
-'''def place_ship(shnum):
-    for i in range(shnum):
-
-        #функция рандома работает для одного отрезка, но у нас их два, потому что установка в середине окна
-        #поэтому временно как бы смещаем установку к правому краю и вычисляем от одного отрезка
-        #если значение попало в область "эллипса", то смещаем его, чтобы было там, где по идее должно быть
-
-        x = random.randint(0, wth/2)
-        if (wth/4 <= x <= wth/2):
-            x += wth/2
-        y = random.randint(0, lth/2)
-        if (lth/4 <= y <= lth/2):
-            y += lth/2
-'''
 
 #выводит итог работы: время, количество оставшихся кораблей, количество кораблей изначальное, и итог: победа установки или кораблей.
 
 def print_result(shmass, t):
-    print("Время работы симуляции: ", t, " секунд")
+    print("Time: ", t)
     print("Start number of ships: ", shnum)
     print("Number of remaining ships: ", len(shmass))
     if hp == 0:
@@ -459,52 +407,52 @@ def print_result(shmass, t):
       
 # ОБРАБОТКА ФИЗИКИ
 def phys(fmass, shmass, pmass, bullets, turrets):
-    global chet, coordinates, abmass_todraw        # некоторые глобальные переменные
-
+    global chet, coordinates, abmass_todraw, shot_flag        # некоторые глобальные переменные
     bullCollid(bullets, shmass)
     shipCollid(shmass)                      # уничтожает столкнувшиеся с установкой корабли
     moveShip(shmass, fmass, chet)           # двигает установку
     chet = not chet                         # отвечает за то, нужно ли на этом ходу испустить фотон. фотон испускается раз в два хода
     movePhot(fmass)                         # движение фотонов
-    
+
     # вызов стрельбы
     for i in pmass:
-
-        if i[2] != 10:# аналогично if pmass[i][2] == 10:                  # если точка это координата корабля
+        if i[2] != 10:  # аналогично if pmass[i][2] == 10:                    # если точка это координата корабля
             continue
-        if (len(coordinates[i[3]]) < 10):#Ищем 4 точки от одного корабля
+        if(len(coordinates[i[3]]) > -1 ):
+            pass
+        if(shot_flag[i[3]] > -1 ):
+            pass
+        if (len(coordinates[i[3]]) < 4 + 16*shot_flag[i[3]]):                                   #Ищем 4 точки от одного корабля
             if tuple([i[0], i[1]]) not in coordinates[i[3]]:
                 coordinates[i[3]].append(tuple([i[0], i[1]]))
             continue
-        if (len(coordinates[i[3]]) == 10):#Если есть 4, то можем продолжить прямую
-
-            coordinates[i[3]] = predict(coordinates[i[3]])#Заменяем полученные несколько точек в координатах на продолжение данной прямой#<A>
+        if (len(coordinates[i[3]]) == 4 + 16*shot_flag[i[3]]):                                  #Если есть 4, то можем продолжить прямую
+            coordinates[i[3]] = predict(coordinates[i[3]])                  #Заменяем полученные несколько точек в координатах на продолжение данной прямой#<A>
             bullets.append(choose_turret(turrets, coordinates[i[3]]).fire(coordinates[i[3]]))
             while len(coordinates[i[3]])>0:
                 coordinates[i[3]].pop(0)
-
+            shot_flag[i[3]] = 1
             d = 0
             while d < len(pmass):
                 if pmass[d][3] == i[3]:
                     pmass.pop(d)
                     d -= 1
                 d += 1
-    i = 0                  # движение снарядов <D>
-    while i < len(bullets):                 # движение снарядов <D>
-        if (bullets[i].move() == 1):                # <D>
-            bullets.pop(i)                          # <D>
+
+    i = 0                                   # движение снарядов
+    while i < len(bullets):                 
+        if (bullets[i].move() == 1):                
+            bullets.pop(i)                          
             i -= 1
         i += 1
 
     if switch[2] == 1:
-        if (len(abmass_todraw) != 0):                  # рисование линий из abmass
-            drawABmass (abmass_todraw, (0,0,0))        # рисование линий из abmass
-
-    abmass = calculate_b(pmass)                  # вычисление прямых
-
+        if (len(abmass_todraw) != 0):                   # рисование линий из abmass
+            drawABmass (abmass_todraw, (0,0,0))         # рисование линий из abmass
+    abmass = calculate_b(pmass)                         # вычисление прямых
     if switch[2] == 1:
-        abmass_todraw = copy.deepcopy(abmass)         # рисование линий из abmass
-        drawABmass (abmass, (255,255,255))            # рисование линий из abmass
+        abmass_todraw = copy.deepcopy(abmass)           # рисование линий из abmass
+        drawABmass (abmass, (255,255,255))              # рисование линий из abmass
 
     calculate_intersection(pmass, abmass)   # определение точек пересечения по прямым
     
@@ -533,16 +481,17 @@ def graph(draw, img, fmass, shmass, pmass, abmass_todraw, bullets, turrets, swit
     if switch[1] == 1:
         drawPoints(pmass, color2)
         
-        
 # Главная функция
 def main():
-    global coordinates, bulletR, bulletSpeed, bvel, img, abmass_todraw, switch, shnum #глобальные переменные чтобы их менять
+    global coordinates, bulletR, bulletSpeed, bvel, img, abmass_todraw, switch, shnum, hp, shot_flag, ct #глобальные переменные чтобы их менять
     
     # НАЧАЛО ВЫПОЛНЕНИЯ:
     cv.namedWindow(wname, cv.WINDOW_NORMAL) # создаём окно размером 1280 на 720
     cv.resizeWindow(wname, 1280, 720)       #
     img = np.zeros((lth, wth, 3))           # Массив для самой картинки, с кораблями и фотонами и установкой
 
+    hp = hp_0    
+    shot_flag = np.zeros(shnum, np.int32)
     coordinates = []
     fmass = [[]]                        # создаём трёхмерный массив, хранящий все пучки, каждый пучок хранит все фотоны
     shmass = []                         # массив кораблей, хранящий каждый корабль, корабль хранит свои координаты и угол.
@@ -550,21 +499,15 @@ def main():
     bullets = [] 
     abmass_todraw = []                       
     # Создание турелей
-    turrets = []                        # массив всех турелей 
+    turrets = []                                                # массив всех турелей 
+    turrets.append(Turret((turretR + 5, turretR + 5)))          # создаём турель в верхнем левом углу 
+    turrets.append(Turret((wth - 5 - turretR, turretR + 5)))    # создаём турель в верхнем правом углу 
 
-    turrets.append(Turret((turretR + 5, turretR + 5))) # создаём турель в верхнем левом углу 
-    turrets.append(Turret((wth - 5 - turretR, turretR + 5))) #создаём турель в верхнем правом углу 
-    #turrets.append(Turret((turretR + 5, lth)))
-
+    
     # Создаем корабли
     for i in range(shnum):
         createShipRand(shmass)
-
-    #createShip(shmass, 50, 50)
-    #createShip(shmass, 500, 500)
-    #createShip(shmass, wth - 50, 100)               # создание еще кораблей по углам
-    #createShip(shmass, wth - 10, lth - 50)         
-    #createShip(shmass, 50, lth - 50)               
+              
     print ("Health: " + str(hp))
     print ("Ship Number: " + str(shN))
     
@@ -573,29 +516,24 @@ def main():
         
     for t in range(1000): # выполняем программу в течение стольких итераций
         graph(0, img, fmass, shmass, pmass, abmass_todraw, bullets, turrets, switch)    # стираем старое 
-        phys(fmass, shmass, pmass, bullets, turrets)     # изменяем координаты в соответствии со скоростями 
+        phys(fmass, shmass, pmass, bullets, turrets)                                    # изменяем координаты в соответствии со скоростями 
         graph(1, img, fmass, shmass, pmass, abmass_todraw, bullets, turrets, switch)    # рисуем новое 
         cv.imshow(wname, img)   
-        key = cv.waitKey(10) & 0xFF
+        key = cv.waitKey(ct) & 0xFF
         if (key == ord('q')) or simEnd() == 1:
             cv.destroyAllWindows()
             break
         if (key == ord('p')):
             cv.waitKey()
             
-        # if (cv.waitKey(10) & 0xFF == ord('q')) or simEnd() == 1: # Программа завершается при нажатии q, смерти установки, смерти всех кораблей
-        #     if (0xFF == ord('q')) or simEnd() == 1:
-        #         cv.destroyAllWindows()
-        #         break
 
     print_result(shmass, t)
     # КОНЕЦ ВЫПОЛНЕНИЯ        
 
-
 #Вспомогательные функции для меню
 def speed_and_size():
-    global bvel, bulletSpeed, bulletR, shnum
-    print("1. Change ships speed\n2. Change ships number\n3. Change bullet speed\n4. Change bullet size\n5. Go back")
+    global bvel, bulletSpeed, bulletR, shnum, ct
+    print("1. Change ships speed\n2. Change ships number\n3. Change bullet speed\n4. Change bullet size\n5. Change cycle time\n6. Go back")
     choice = input()
     if choice == "1":
         print("Enter ships speed ")
@@ -614,11 +552,16 @@ def speed_and_size():
         bulletR = int(input())
         speed_and_size()
     if choice == "5":
+        print("Enter new cycle time ")
+        ct = int(input())
+        speed_and_size()
+    if choice == "6":
         settings()
 
 def drawing():
     global switch
-    print("1. Draw photons\n2. Do not draw photons\n3. Draw points\n4. Do not draw points\n5. Draw paths\n6. Do not draw paths\n7. Go back")
+
+    print("\n1. Draw photons\n2. Do not draw photons\n3. Draw points\n4. Do not draw points\n5. Draw paths\n6. Do not draw paths\n7. Go back")
     choice = input()
     if choice == "1":
         switch[0] = 1
@@ -642,7 +585,7 @@ def drawing():
         settings()
 
 def settings():
-    print("1. Speed and size\n2. Drawing\n3. Go back")
+    print("\n1. Numerical parameters\n2. Drawing\n3. Go back")
     choice = input()
     if choice == "1":
         speed_and_size()
@@ -652,7 +595,7 @@ def settings():
         menu()
 #МЕНЮ
 def menu():
-    print("1. Start Game 2. Quit Game 3. Settings")
+    print("\n1. Start Simulation\n2. Quit\n3. Settings")
     choice = input()
     if choice == "1":
         main()
