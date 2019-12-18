@@ -28,7 +28,7 @@ turretR = 22                # размер турели
 bulletSpeed = 22            # скорость снаряда
 bulletR = 8                 # радиус снаряда
 shnum = 5                   # Изначальное количество кораблей, не меняется во время симуляции
-ct = 100
+ct = 40                     # период цикла
 
 # region Классы
 class Turret():                         #класс турели
@@ -285,7 +285,6 @@ def bullCollid(bullets, shmass):
 
 # функция подаёт сигнал на завершение симуляции, если установка мертва либо кораблей ноль.
 def simEnd():
-    print("privet")
     if hp == 0:
         print ("Station Destroyed")
         return 1
@@ -427,7 +426,7 @@ def phys(fmass, shmass, pmass, bullets, turrets):
                 coordinates[i[3]].append(tuple([i[0], i[1]]))
             continue
         if (len(coordinates[i[3]]) == 4 + 16*shot_flag[i[3]]):                                  #Если есть 4, то можем продолжить прямую
-            coordinates[i[3]] = predict(coordinates[i[3]])                  #Заменяем полученные несколько точек в координатах на продолжение данной прямой#<A>
+            coordinates[i[3]] = predict(coordinates[i[3]])                                      #Заменяем полученные несколько точек в координатах на продолжение данной прямой#<A>
             bullets.append(choose_turret(turrets, coordinates[i[3]]).fire(coordinates[i[3]]))
             while len(coordinates[i[3]])>0:
                 coordinates[i[3]].pop(0)
@@ -492,6 +491,7 @@ def main():
 
     hp = hp_0    
     shot_flag = np.zeros(shnum, np.int32)
+    
     coordinates = []
     fmass = [[]]                        # создаём трёхмерный массив, хранящий все пучки, каждый пучок хранит все фотоны
     shmass = []                         # массив кораблей, хранящий каждый корабль, корабль хранит свои координаты и угол.
@@ -511,7 +511,7 @@ def main():
     print ("Health: " + str(hp))
     print ("Ship Number: " + str(shN))
     
-    for i in shmass:
+    for i in range(shnum):
         coordinates.append([])
         
     for t in range(1000): # выполняем программу в течение стольких итераций
