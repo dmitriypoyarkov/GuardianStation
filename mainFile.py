@@ -28,7 +28,7 @@ turretR = 22                # размер турели
 bulletSpeed = 22            # скорость снаряда
 bulletR = 8                 # радиус снаряда
 shnum = 5                   # Изначальное количество кораблей, не меняется во время симуляции
-ct = 40                     # период цикла
+ct = 20                     # период цикла
 
 # region Классы
 class Turret():                         #класс турели
@@ -69,8 +69,8 @@ class Turret():                         #класс турели
 class Bullet():
     def __init__(self, start, target):  #инициализируем снаряд, задавая начальную точку и точку прилёта снаряда, находим проекцию скоростей
         r = ((start[0] - target[0]) ** 2 + (start[1] - target[1]) ** 2) ** 0.5
-        self.x_speed = int((target[0] - start[0]) * bulletSpeed / r)
-        self.y_speed = int((target[1] - start[1]) * bulletSpeed / r)
+        self.x_speed = (target[0] - start[0]) * bulletSpeed / r
+        self.y_speed = (target[1] - start[1]) * bulletSpeed / r
         self.x = start[0]
         self.y = start[1]
     def draw(self, color):              #рисуем снаряд
@@ -79,8 +79,8 @@ class Bullet():
         else:
             color1 = (0.2, 0, 1)
         bR = 1.3*bulletR
-        cv.circle(img, (self.x,self.y), int(bR), color1, int(bR*0.2))
-        cv.circle(img, (self.x,self.y), int(0.4*bR), color1, -1)        
+        cv.circle(img, (int(self.x),int(self.y)), int(bR), color1, int(bR*0.2))
+        cv.circle(img, (int(self.x),int(self.y)), int(0.4*bR), color1, -1)        
 
     def move(self):                     #сдвигаем снаряд, соответственно его времени
         self.x += self.x_speed
@@ -482,7 +482,7 @@ def graph(draw, img, fmass, shmass, pmass, abmass_todraw, bullets, turrets, swit
         
 # Главная функция
 def main():
-    global coordinates, bulletR, bulletSpeed, bvel, img, abmass_todraw, switch, shnum, hp, shot_flag, ct #глобальные переменные чтобы их менять
+    global coordinates, bulletR, bulletSpeed, bvel, img, abmass_todraw, switch, shnum, hp, shot_flag, ct, shN #глобальные переменные чтобы их менять
     
     # НАЧАЛО ВЫПОЛНЕНИЯ:
     cv.namedWindow(wname, cv.WINDOW_NORMAL) # создаём окно размером 1280 на 720
@@ -492,6 +492,7 @@ def main():
     hp = hp_0    
     shot_flag = np.zeros(shnum, np.int32)
     
+    shN = 0
     coordinates = []
     fmass = [[]]                        # создаём трёхмерный массив, хранящий все пучки, каждый пучок хранит все фотоны
     shmass = []                         # массив кораблей, хранящий каждый корабль, корабль хранит свои координаты и угол.
@@ -511,7 +512,7 @@ def main():
     print ("Health: " + str(hp))
     print ("Ship Number: " + str(shN))
     
-    for i in range(shnum):
+    for i in range(shnum + 1):
         coordinates.append([])
         
     for t in range(1000): # выполняем программу в течение стольких итераций
